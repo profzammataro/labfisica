@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archivio Laboratorio di Fisica</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #3494E6 0%, #EC6EAD 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #3494E6 0%, #EC6EAD 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .unlock-icon {
+            cursor: pointer;
+            font-size: 1.2em;
+            transition: transform 0.2s;
+            user-select: none;
+        }
+
+        .unlock-icon:hover {
+            transform: scale(1.2);
+        }
+
+        .unlock-icon.unlocked {
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-10deg); }
+            75% { transform: rotate(10deg); }
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .edit-mode-only {
+            display: none;
+        }
+
+        .edit-mode .edit-mode-only {
+            display: block;
+        }
+
+        .form-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 10px;
+        }
+        
+        .form-group.edit-mode-only {
+            display: none;
+        }
+        
+        .edit-mode .form-group.edit-mode-only {
+            display: grid;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+            transition: border 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #3494E6;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #3494E6 0%, #EC6EAD 100%);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: transform 0.2s;
+            margin: 10px 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .btn-delete {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .btn-edit {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+        }
+
+        .btn-cancel {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+        }
+
+        .btn-small {
+            padding: 8px 15px;
+            font-size: 0.9em;
+            margin: 2px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        th {
+            background: linear-gradient(135deg, #3494E6 0%, #EC6EAD 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            transition: background 0.3s;
+        }
+
+        th:hover {
+            background: linear-gradient(135deg, #2983d5 0%, #db5d9c 100%);
+        }
+
+        th.sortable::after {
+            content: ' ⇅';
+            opacity: 0.5;
+            font-size: 0.9em;
+        }
+
+        th.sort-asc::after {
+            content: ' ↑';
+            opacity: 1;
+        }
+
+        th.sort-desc::after {
+            content: ' ↓';
+            opacity: 1;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        tr:hover {
+            background: #f5f5f5;
+        }
+
+        .row-editing {
+            background: #fff3cd !important;
+            box-shadow: inset 0 0 0 2px #ffc107;
+        }
+
+        .action-btns {
+            white-space: nowrap;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px !important;
+            color: #999;
+            font-style: italic;
+        }
+
+        .search-container {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 10px;
+        }
+
+        .search-container input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+
+        .search-container input:focus {
+            outline: none;
+            border-color: #3494E6;
+        }
+
+        @media (max-width: 768px) {
+            .form-group {
+                grid-template-columns: 1fr;
+            }
+            
+            table {
+                font-size: 0.9em;
+            }
+            
+            .btn {
+                padding: 10px 20px;
+                font-size: 1em;
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                ⚛️ Laboratorio di Fisica
+                <span class="unlock-icon" id="unlockIcon" onclick="attemptUnlock()">🔒</span>
+            </h1>
+            <p>Archivio Attrezzature</p>
+        </div>
+
+        <div class="content" id="mainContent">
+            <div class="search-container">
+                <input type="text" id="searchInput" placeholder="🔍 Cerca dispositivi, armadio, ripiano..." onkeyup="filterTable()">
+            </div>
+
+            <div class="form-group edit-mode-only">
+                <div>
+                    <label for="dispositivo">Dispositivo-Strumento *</label>
+                    <input type="text" id="dispositivo" placeholder="es. Multimetro digitale">
+                </div>
+                <div>
+                    <label for="armadio">Armadio-Ripiano</label>
+                    <input type="text" id="armadio" placeholder="es. A3-R2">
+                </div>
+                <div>
+                    <label for="quantita">Quantità</label>
+                    <input type="text" id="quantita" placeholder="es. 5">
+                </div>
+            </div>
+
+            <div class="edit-mode-only">
+                <button class="btn" id="addBtn" onclick="addDispositivo()">➕ Aggiungi Dispositivo</button>
+                <button class="btn btn-cancel" id="cancelBtn" onclick="cancelEdit()" style="display: none;">❌ Annulla Modifica</button>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th class="sortable" onclick="sortTable(0)">Dispositivo-Strumento</th>
+                        <th class="sortable" onclick="sortTable(1)">Armadio-Ripiano</th>
+                        <th class="sortable" onclick="sortTable(2)">Quantità</th>
+                        <th class="edit-mode-only">Azioni</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody_dispositivi">
+                    <tr><td colspan="3" class="empty-state">Nessun elemento inserito</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script>
+        // Configurazione Firebase dedicata per Laboratorio di Fisica
+        const firebaseConfig = {
+            apiKey: "AIzaSyC3du3OH-D9jvKWFO_kbb9gFIUoHhFsbsQ",
+            authDomain: "labfisica-5bff5.firebaseapp.com",
+            databaseURL: "https://labfisica-5bff5-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "labfisica-5bff5",
+            storageBucket: "labfisica-5bff5.firebasestorage.app",
+            messagingSenderId: "487395712770",
+            appId: "1:487395712770:web:37b156c066c28ecfa3ac1b"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        let dispositivi = [];
+        let editingId = null;
+        let isEditMode = false;
+        let sortDirection = {};
+        let clickCount = 0;
+        let clickTimer = null;
+
+        // Carica dati da Firebase
+        database.ref('fisica_dispositivi').on('value', (snapshot) => {
+            dispositivi = [];
+            snapshot.forEach((childSnapshot) => {
+                dispositivi.push({
+                    id: childSnapshot.key,
+                    ...childSnapshot.val()
+                });
+            });
+            renderDispositivi();
+        });
+
+        function attemptUnlock() {
+            clickCount++;
+            
+            // Reset del timer se esiste già
+            if (clickTimer) {
+                clearTimeout(clickTimer);
+            }
+            
+            // Reset del counter dopo 2 secondi di inattività
+            clickTimer = setTimeout(() => {
+                clickCount = 0;
+            }, 2000);
+            
+            // Feedback visivo
+            const icon = document.getElementById('unlockIcon');
+            icon.style.transform = `scale(${1 + clickCount * 0.1})`;
+            
+            setTimeout(() => {
+                icon.style.transform = 'scale(1)';
+            }, 150);
+            
+            // Attivazione dopo 5 click
+            if (clickCount >= 5) {
+                isEditMode = true;
+                document.getElementById('mainContent').classList.add('edit-mode');
+                document.getElementById('unlockIcon').textContent = '🔓';
+                document.getElementById('unlockIcon').classList.add('unlocked');
+                renderDispositivi();
+                clickCount = 0;
+                clearTimeout(clickTimer);
+                
+                // Piccola animazione di successo
+                icon.style.transition = 'transform 0.5s ease';
+                icon.style.transform = 'rotate(360deg) scale(1.3)';
+                setTimeout(() => {
+                    icon.style.transform = 'rotate(0deg) scale(1)';
+                }, 500);
+            }
+        }
+
+        function addDispositivo() {
+            const dispositivo = document.getElementById('dispositivo').value;
+            const armadio = document.getElementById('armadio').value;
+            const quantita = document.getElementById('quantita').value;
+
+            if (!dispositivo) {
+                alert('Inserisci almeno il nome del dispositivo!');
+                return;
+            }
+
+            const data = { dispositivo, armadio, quantita };
+
+            if (editingId !== null) {
+                database.ref('fisica_dispositivi/' + editingId).update(data)
+                    .then(() => {
+                        const index = dispositivi.findIndex(item => item.id === editingId);
+                        dispositivi[index] = { ...data, id: editingId };
+                        cancelEdit();
+                        renderDispositivi();
+                    })
+                    .catch(error => {
+                        console.error('Errore aggiornamento:', error);
+                        alert('Errore nel salvataggio');
+                    });
+            } else {
+                const newRef = database.ref('fisica_dispositivi').push();
+                newRef.set(data)
+                    .then(() => {
+                        dispositivi.push({ ...data, id: newRef.key });
+                        renderDispositivi();
+                    })
+                    .catch(error => {
+                        console.error('Errore aggiunta:', error);
+                        alert('Errore nel salvataggio');
+                    });
+            }
+            
+            document.getElementById('dispositivo').value = '';
+            document.getElementById('armadio').value = '';
+            document.getElementById('quantita').value = '';
+        }
+
+        function editDispositivo(id) {
+            const item = dispositivi.find(d => d.id === id);
+            if (!item) return;
+
+            document.getElementById('dispositivo').value = item.dispositivo;
+            document.getElementById('armadio').value = item.armadio;
+            document.getElementById('quantita').value = item.quantita;
+
+            editingId = id;
+            document.getElementById('addBtn').textContent = '💾 Salva Modifiche';
+            document.getElementById('cancelBtn').style.display = 'inline-block';
+
+            document.querySelectorAll('#tbody_dispositivi tr').forEach(row => {
+                row.classList.remove('row-editing');
+            });
+            event.target.closest('tr').classList.add('row-editing');
+        }
+
+        function cancelEdit() {
+            editingId = null;
+            document.getElementById('dispositivo').value = '';
+            document.getElementById('armadio').value = '';
+            document.getElementById('quantita').value = '';
+            document.getElementById('addBtn').textContent = '➕ Aggiungi Dispositivo';
+            document.getElementById('cancelBtn').style.display = 'none';
+
+            document.querySelectorAll('#tbody_dispositivi tr').forEach(row => {
+                row.classList.remove('row-editing');
+            });
+        }
+
+        function renderDispositivi() {
+            const tbody = document.getElementById('tbody_dispositivi');
+            const colspan = isEditMode ? '4' : '3';
+            
+            if (dispositivi.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="${colspan}" class="empty-state">Nessun elemento inserito</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = dispositivi.map(item => `
+                <tr>
+                    <td>${item.dispositivo}</td>
+                    <td>${item.armadio}</td>
+                    <td>${item.quantita}</td>
+                    ${isEditMode ? `<td class="action-btns">
+                        <button class="btn btn-small btn-edit" onclick="editDispositivo('${item.id}')">✏️ Modifica</button>
+                        <button class="btn btn-small btn-delete" onclick="deleteDispositivo('${item.id}')">🗑️ Elimina</button>
+                    </td>` : ''}
+                </tr>
+            `).join('');
+        }
+
+        function deleteDispositivo(id) {
+            if (confirm('Sei sicuro di voler eliminare questo elemento?')) {
+                database.ref('fisica_dispositivi/' + id).remove()
+                    .then(() => {
+                        dispositivi = dispositivi.filter(item => item.id !== id);
+                        if (editingId === id) cancelEdit();
+                        renderDispositivi();
+                    })
+                    .catch(error => {
+                        console.error('Errore eliminazione:', error);
+                        alert('Errore nell\'eliminazione');
+                    });
+            }
+        }
+
+        function sortTable(columnIndex) {
+            const headers = document.querySelectorAll('th.sortable');
+            const currentHeader = headers[columnIndex];
+            
+            // Reset altri header
+            headers.forEach((h, i) => {
+                if (i !== columnIndex) {
+                    h.classList.remove('sort-asc', 'sort-desc');
+                }
+            });
+            
+            // Toggle direzione
+            if (!sortDirection[columnIndex] || sortDirection[columnIndex] === 'desc') {
+                sortDirection[columnIndex] = 'asc';
+                currentHeader.classList.remove('sort-desc');
+                currentHeader.classList.add('sort-asc');
+            } else {
+                sortDirection[columnIndex] = 'desc';
+                currentHeader.classList.remove('sort-asc');
+                currentHeader.classList.add('sort-desc');
+            }
+            
+            const fields = ['dispositivo', 'armadio', 'quantita'];
+            const field = fields[columnIndex];
+            
+            dispositivi.sort((a, b) => {
+                let valA = a[field] || '';
+                let valB = b[field] || '';
+                
+                // Prova conversione numerica
+                const numA = parseFloat(valA);
+                const numB = parseFloat(valB);
+                
+                if (!isNaN(numA) && !isNaN(numB)) {
+                    return sortDirection[columnIndex] === 'asc' ? numA - numB : numB - numA;
+                }
+                
+                // Altrimenti confronto alfabetico
+                valA = valA.toString().toLowerCase();
+                valB = valB.toString().toLowerCase();
+                
+                if (sortDirection[columnIndex] === 'asc') {
+                    return valA.localeCompare(valB);
+                } else {
+                    return valB.localeCompare(valA);
+                }
+            });
+            
+            renderDispositivi();
+        }
+
+        function filterTable() {
+            const searchText = document.getElementById('searchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('#tbody_dispositivi tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                if (text.includes(searchText)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+</html>y>
+</html>
